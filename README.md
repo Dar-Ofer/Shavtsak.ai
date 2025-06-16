@@ -1,2 +1,2 @@
-# Shavtsak
+# Shavtsak.ai
 Life-Mission Balance
