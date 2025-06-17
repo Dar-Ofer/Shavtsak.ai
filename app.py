@@ -10,7 +10,7 @@ with st.expander("✏️ פרטי המשימה"):
     mission_name = st.text_input("שם המשימה", "הר חריף")
     num_teams = st.number_input("מספר צוותים", min_value=1, value=2)
 
-    roles_needed = ["נהג", "מט""ב", "חוג""ד", "חובש"]
+    roles_needed = ["נהג", "מט"ב", "חוג"ד", "חובש"]
     mission_structure = {}
     for role in roles_needed:
         mission_structure[role] = st.number_input(f"כמה {role} צריך בכל צוות?", min_value=0, value=1 if role != "חובש" else 2)
@@ -24,15 +24,34 @@ uploaded_file = st.file_uploader("קובץ אקסל עם רשימת חיילים
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
 else:
-    with st.expander("✏️ הזנה ידנית"):
-        default_data = {
-            'שם': ["גל א׳", "אושרי", "נועם", "ביטרן"],
-            'תפקיד': ["חובש", "חוג""ד", "מט""ב", "חובש"],
-            'תפקיד נוסף': ["", "חובש", "", ""],
-            'הערות': ["זמין רק באמצע שבוע", "אסור שישן בשטח", "אין מגבלות", "לא מגיע בימי שישי"]
-        }
-        df = pd.DataFrame(default_data)
+    st.subheader("הזנה ידנית")
+    if 'manual_data' not in st.session_state:
+        st.session_state.manual_data = []
+
+    with st.form(key="manual_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input("שם")
+            role = st.selectbox("תפקיד", ["", "חובש", "מט"ב", "נהג", "חוג"ד", "קשר", "מפקד לבנה", "מפקד אירוע"])
+        with col2:
+            alt_role = st.selectbox("תפקיד נוסף", ["", "חובש", "מט"ב", "נהג", "חוג"ד", "קשר", "מפקד לבנה", "מפקד אירוע"])
+            notes = st.text_input("הערות")
+
+        submitted = st.form_submit_button("➕ הוסף לרשימה")
+        if submitted and name and role:
+            st.session_state.manual_data.append({
+                'שם': name,
+                'תפקיד': role,
+                'תפקיד נוסף': alt_role,
+                'הערות': notes
+            })
+
+    if st.session_state.manual_data:
+        df = pd.DataFrame(st.session_state.manual_data)
         st.dataframe(df, use_container_width=True)
+    else:
+        df = pd.DataFrame(columns=['שם', 'תפקיד', 'תפקיד נוסף', 'הערות'])
+        st.info("לא הוזנו חיילים עדיין")
 
 # --- סיכום ראשוני ---
 st.header("3. סיכום מצב")
@@ -45,10 +64,11 @@ with col1:
     st.write(pd.DataFrame.from_dict(role_totals, orient='index', columns=['נדרש']))
 
 with col2:
-    st.subheader("כמות זמינה לפי החיילים")
-    available = df[['תפקיד']].copy()
-    available = available.value_counts().reset_index(name='כמות')
-    st.write(available)
+    st.subheader("כוח אדם קיים")
+    if not df.empty:
+        st.dataframe(df[['שם', 'תפקיד', 'תפקיד נוסף', 'הערות']], use_container_width=True)
+    else:
+        st.write("אין נתונים להצגה")
 
 # --- אזור עתידי לשיבוץ אוטומטי ---
 st.header("4. (בהמשך) שיבוץ אוטומטי")
