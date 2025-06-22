@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="שבצ"ק AI", layout="wide")
+st.set_page_config(page_title="שבצק AI", layout="wide")
 
 # ניווט בין המסכים
 menu = st.sidebar.radio("בחר מסך:", [
