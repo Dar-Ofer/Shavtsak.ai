@@ -1,75 +1,51 @@
 import streamlit as st
-import pandas as pd
 
-st.set_page_config(page_title="שיבוץ כוח אדם", layout="wide")
-st.title("📋 אפליקציית שיבוץ משימות לצוותים רפואיים")
+st.set_page_config(page_title="שבצ"ק AI", layout="wide")
 
-# --- הגדרת משימה ---
-st.header("1. הגדרת משימה")
-with st.expander("✏️ פרטי המשימה"):
-    mission_name = st.text_input("שם המשימה", "הר חריף")
-    num_teams = st.number_input("מספר צוותים", min_value=1, value=2)
+# ניווט בין המסכים
+menu = st.sidebar.radio("בחר מסך:", [
+    "📌 הגדרת משימה",
+    "👥 ניהול כוח אדם",
+    "🗓️ טבלת שיבוץ",
+    "📊 דוח מסכם"
+])
 
-    roles_needed = ["נהג", "מט"ב", "חוג"ד", "חובש"]
-    mission_structure = {}
-    for role in roles_needed:
-        mission_structure[role] = st.number_input(f"כמה {role} צריך בכל צוות?", min_value=0, value=1 if role != "חובש" else 2)
+# מסך 1 – הגדרת משימה וצוותים
+if menu == "📌 הגדרת משימה":
+    st.title("📌 הגדרת משימה וצוותים")
+    with st.form("mission_form"):
+        mission_name = st.text_input("שם המשימה")
+        mission_dates = st.date_input("טווח תאריכים למשימה", [])
+        num_teams = st.number_input("כמה צוותים במשימה?", min_value=1, value=1)
+        st.markdown("#### הגדרת תפקידים בצוות (לדוגמה: אמבולנס = נהג, מטפל בכיר, 2 חובשים וכו')")
+        team_structure = st.text_area("תיאור חופשי או פורמט מובנה")
+        mission_constraints = st.text_area("הגבלות מבצעיות (מקסימום בית, מינימום ביחידה וכו')")
+        submitted = st.form_submit_button("שמור משימה")
+        if submitted:
+            st.success("המשימה נשמרה (עדיין לא בבסיס נתונים)")
 
-# --- פרטי חיילים ---
-st.header("2. הזנת כוח אדם")
-st.markdown("העלה קובץ Excel או הזן ידנית")
+# מסך 2 – ניהול כוח אדם
+elif menu == "👥 ניהול כוח אדם":
+    st.title("👥 ניהול כוח אדם")
+    st.markdown("הזן פרטי חיילים באופן ידני")
+    with st.form("person_form"):
+        name = st.text_input("שם")
+        role = st.selectbox("תפקיד ראשי", ["", "חובש", "מטפל בכיר", "נהג אמבולנס", "נהג האמר", "לוחם", "מפקד לוחמים", "מפקד לבנה", "מנהל אירוע", "קשר"])
+        secondary_role = st.selectbox("תפקיד נוסף", ["", "חובש", "מטפל בכיר", "נהג אמבולנס", "נהג האמר", "לוחם", "מפקד לוחמים", "מפקד לבנה", "מנהל אירוע", "קשר"])
+        preferred_team = st.text_input("עובד טוב עם (שמות) – לא חובה")
+        absences = st.text_area("תאריכים בהם אינו זמין (YYYY-MM-DD, מופרדים בפסיקים)")
+        submitted = st.form_submit_button("➕ הוסף לחיילים")
+        if submitted:
+            st.success(f"{name} נוסף לרשימת כוח האדם (עדיין לא נשמר)!")
 
-uploaded_file = st.file_uploader("קובץ אקסל עם רשימת חיילים (עמודות: שם, תפקיד, תפקיד נוסף, הערות)", type="xlsx")
+# מסך 3 – טבלת שיבוץ בפועל (placeholder)
+elif menu == "🗓️ טבלת שיבוץ":
+    st.title("🗓️ טבלת שיבוץ (תצוגת צופה)")
+    st.info("כאן תוצג טבלת השיבוץ המלאה לפי ימים, צוותים ותפקידים. צופים לא יראו את מצב השהות או הערות פרטיות.")
+    st.markdown("⚠️ שיבוץ טרם נבנה. בהמשך נציג את החלוקה לכל צוות לפי ימים.")
 
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-else:
-    st.subheader("הזנה ידנית")
-    if 'manual_data' not in st.session_state:
-        st.session_state.manual_data = []
-
-    with st.form(key="manual_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("שם")
-            role = st.selectbox("תפקיד", ["", "חובש", "מט"ב", "נהג", "חוג"ד", "קשר", "מפקד לבנה", "מפקד אירוע"])
-        with col2:
-            alt_role = st.selectbox("תפקיד נוסף", ["", "חובש", "מט"ב", "נהג", "חוג"ד", "קשר", "מפקד לבנה", "מפקד אירוע"])
-            notes = st.text_input("הערות")
-
-        submitted = st.form_submit_button("➕ הוסף לרשימה")
-        if submitted and name and role:
-            st.session_state.manual_data.append({
-                'שם': name,
-                'תפקיד': role,
-                'תפקיד נוסף': alt_role,
-                'הערות': notes
-            })
-
-    if st.session_state.manual_data:
-        df = pd.DataFrame(st.session_state.manual_data)
-        st.dataframe(df, use_container_width=True)
-    else:
-        df = pd.DataFrame(columns=['שם', 'תפקיד', 'תפקיד נוסף', 'הערות'])
-        st.info("לא הוזנו חיילים עדיין")
-
-# --- סיכום ראשוני ---
-st.header("3. סיכום מצב")
-st.markdown(f"**שם משימה:** {mission_name} | **מספר צוותים:** {num_teams}")
-
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("כמות נדרשת לכל תפקיד")
-    role_totals = {role: mission_structure[role] * num_teams for role in mission_structure}
-    st.write(pd.DataFrame.from_dict(role_totals, orient='index', columns=['נדרש']))
-
-with col2:
-    st.subheader("כוח אדם קיים")
-    if not df.empty:
-        st.dataframe(df[['שם', 'תפקיד', 'תפקיד נוסף', 'הערות']], use_container_width=True)
-    else:
-        st.write("אין נתונים להצגה")
-
-# --- אזור עתידי לשיבוץ אוטומטי ---
-st.header("4. (בהמשך) שיבוץ אוטומטי")
-st.info("כאן נציג את השיבוץ המוצע לפי התפקידים, ההעדפות והחוקים")
+# מסך 4 – דוח מסכם
+elif menu == "📊 דוח מסכם":
+    st.title("📊 דוח מסכם")
+    st.markdown("- כמה חיילים ביחידה/בבית\n- מי בבית? כמה זמן?\n- מי חרג ממגבלה?\n- גרף ימי שירות לכל חייל\n- ייצוא ל-Excel")
+    st.info("תוכן הדוח ייבנה בהתאם למידע שישובץ בפועל")
